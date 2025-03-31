@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  payment-gateway:
+    build: ./payment-gateway
+    container_name: payment_gateway_app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/payment_gateway
+      SPRING_DATASOURCE_USERNAME: pguser
+      SPRING_DATASOURCE_PASSWORD: pgpassword
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:15
+    container_name: pg_gateway
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: payment_gateway
+      POSTGRES_USER: pguser
+      POSTGRES_PASSWORD: pgpassword
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  bank-emulator:
+    build: ./bank-emulator
+    container_name: bank_emulator_app
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/bank_emulator
+      SPRING_DATASOURCE_USERNAME: myuser
+      SPRING_DATASOURCE_PASSWORD: mypassword
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_bank
+    restart: always
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_DATABASE: bank_emulator
+      MYSQL_USER: myuser
+      MYSQL_PASSWORD: mypassword
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  payment-page:
+    build: ./payment-page
+    container_name: payment_page_app
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:8080
+    depends_on:
+      - payment-gateway
+
+  personal-cabinet:
+    build: ./personal-cabinet
+    container_name: personal_cabinet_app
+    ports:
+      - "5174:5174"
+    environment:
+      EXAMPLE_ENV: "some_value"
+    depends_on:
+      - payment-gateway
+
+volumes:
+  pg_data:
+  mysql_data:

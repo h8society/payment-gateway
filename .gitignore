@@ -1,0 +1,17 @@
+# Java / Maven
+target/
+*.log
+
+# Node / React
+node_modules/
+dist/
+build/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Docker
+*.env
