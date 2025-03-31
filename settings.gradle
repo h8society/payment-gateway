@@ -1,0 +1,2 @@
+rootProject.name = 'payment-gateway'
+include 'bank-emulator', 'payment-gateway-service'
