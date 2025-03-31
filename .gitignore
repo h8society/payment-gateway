@@ -1,6 +1,7 @@
 # Java / Maven
 target/
 *.log
+.gradle
 
 # Node / React
 node_modules/
