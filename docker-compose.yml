@@ -14,7 +14,7 @@ services:
       - postgres
 
   postgres:
-    image: postgres:15
+    image: postgres:14.6
     container_name: pg_gateway
     restart: always
     ports:
@@ -36,7 +36,8 @@ services:
       SPRING_DATASOURCE_USERNAME: myuser
       SPRING_DATASOURCE_PASSWORD: mypassword
     depends_on:
-      - mysql
+      mysql:
+          condition: service_healthy
 
   mysql:
     image: mysql:8.0
@@ -51,6 +52,11 @@ services:
       MYSQL_ROOT_PASSWORD: rootpassword
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   payment-page:
     build: ./payment-page
