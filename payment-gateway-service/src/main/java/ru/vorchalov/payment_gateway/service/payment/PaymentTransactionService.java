@@ -2,10 +2,7 @@ package ru.vorchalov.payment_gateway.service.payment;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.vorchalov.payment_gateway.dto.CreatePaymentRequest;
-import ru.vorchalov.payment_gateway.dto.PayTransactionRequest;
-import ru.vorchalov.payment_gateway.dto.PaymentTransactionDto;
-import ru.vorchalov.payment_gateway.dto.MrBinLookupResponse;
+import ru.vorchalov.payment_gateway.dto.*;
 import ru.vorchalov.payment_gateway.entity.GatewaySettingEntity;
 import ru.vorchalov.payment_gateway.entity.PaymentTransactionEntity;
 import ru.vorchalov.payment_gateway.entity.TransactionStatusEntity;
@@ -17,6 +14,7 @@ import ru.vorchalov.payment_gateway.service.payment.BankEmulatorService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -120,6 +118,12 @@ public class PaymentTransactionService {
         return toDto(entity);
     }
 
+    @Transactional(readOnly = true)
+    public List<PaymentTransactionDto> getTransactionsForUser(String username) {
+        List<PaymentTransactionEntity> transactions = transactionRepo.findAllByUserUsername(username);
+        return transactions.stream().map(this::toDto).toList();
+    }
+
     private String parseBin(String cardNumber) {
         if (cardNumber == null || cardNumber.length() < 6) {
             return "000000";
@@ -149,4 +153,34 @@ public class PaymentTransactionService {
         dto.setBinCountry(e.getBinCountry());
         return dto;
     }
+
+    public MerchantStatsDto getStatsForUser(String username) {
+        List<PaymentTransactionEntity> transactions = transactionRepo.findAllByUserUsername(username);
+
+        long totalCount = transactions.size();
+
+        long paidCount = transactions.stream()
+                .filter(tx -> "paid".equalsIgnoreCase(tx.getStatus().getStatusCode()))
+                .count();
+
+        long nonPaidCount = totalCount - paidCount;
+
+        BigDecimal totalAmount = transactions.stream()
+                .map(PaymentTransactionEntity::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal paidAmount = transactions.stream()
+                .filter(tx -> "paid".equalsIgnoreCase(tx.getStatus().getStatusCode()))
+                .map(PaymentTransactionEntity::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        MerchantStatsDto dto = new MerchantStatsDto();
+        dto.setTransactionCount(totalCount);
+        dto.setPaidCount(paidCount);
+        dto.setNonPaidCount(nonPaidCount);
+        dto.setTotalAmount(totalAmount);
+        dto.setPaidAmount(paidAmount);
+        return dto;
+    }
+
 }

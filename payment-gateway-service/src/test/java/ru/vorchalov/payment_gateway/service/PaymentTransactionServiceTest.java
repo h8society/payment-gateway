@@ -21,11 +21,10 @@ import ru.vorchalov.payment_gateway.service.payment.PaymentTransactionService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ActiveProfiles("test")
@@ -159,10 +158,8 @@ public class PaymentTransactionServiceTest {
         binResponse.setCountry_name("USA");
         when(mrBinService.lookup(any())).thenReturn(binResponse);
 
-        // Твой эмулятор возвращает APPROVED, не "00"
         when(bankEmulatorService.getResponseCode(any())).thenReturn("APPROVED");
 
-        // Вот тут важно: убедись, что статус paid возвращается
         TransactionStatusEntity paidStatus = new TransactionStatusEntity();
         paidStatus.setStatusCode("paid");
         when(statusRepo.findByStatusCode("paid")).thenReturn(Optional.of(paidStatus));
@@ -187,6 +184,79 @@ public class PaymentTransactionServiceTest {
         assertEquals("VISA", dto.getBinBrand());
         assertEquals("Test Bank", dto.getBinBankName());
         assertEquals("USA", dto.getBinCountry());
+    }
+
+    @Test
+    void getTransactionsForUser_returnsMappedDtos() {
+        PaymentTransactionEntity tx = new PaymentTransactionEntity();
+        tx.setTransactionId(1L);
+        tx.setAmount(new BigDecimal("99.99"));
+        tx.setResponseCode("00");
+        tx.setTransactionDate(LocalDateTime.now());
+        tx.setBinBrand("VISA");
+        tx.setBinBankName("Test Bank");
+        tx.setBinCountry("Germany");
+
+        TransactionStatusEntity status = new TransactionStatusEntity();
+        status.setStatusCode("paid");
+        tx.setStatus(status);
+
+        when(transactionRepo.findAllByUserUsername("merchant1"))
+                .thenReturn(List.of(tx));
+
+        List<PaymentTransactionDto> result = paymentService.getTransactionsForUser("merchant1");
+
+        assertEquals(1, result.size());
+        PaymentTransactionDto dto = result.get(0);
+        assertEquals(1L, dto.getTransactionId());
+        assertEquals(new BigDecimal("99.99"), dto.getAmount());
+        assertEquals("paid", dto.getStatusCode());
+        assertEquals("00", dto.getResponseCode());
+        assertEquals("VISA", dto.getBinBrand());
+        assertEquals("Test Bank", dto.getBinBankName());
+        assertEquals("Germany", dto.getBinCountry());
+    }
+
+    @Test
+    void getTransactionsForUser_whenNone_returnsEmptyList() {
+        when(transactionRepo.findAllByUserUsername("emptyuser"))
+                .thenReturn(List.of());
+
+        List<PaymentTransactionDto> result = paymentService.getTransactionsForUser("emptyuser");
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void getStatsForUser_returnsCorrectStats() {
+        PaymentTransactionEntity paidTx1 = new PaymentTransactionEntity();
+        paidTx1.setAmount(new BigDecimal("100.00"));
+        TransactionStatusEntity paidStatus = new TransactionStatusEntity();
+        paidStatus.setStatusCode("paid");
+        paidTx1.setStatus(paidStatus);
+
+        PaymentTransactionEntity declinedTx = new PaymentTransactionEntity();
+        declinedTx.setAmount(new BigDecimal("200.00"));
+        TransactionStatusEntity declinedStatus = new TransactionStatusEntity();
+        declinedStatus.setStatusCode("declined");
+        declinedTx.setStatus(declinedStatus);
+
+        PaymentTransactionEntity paidTx2 = new PaymentTransactionEntity();
+        paidTx2.setAmount(new BigDecimal("300.00"));
+        paidTx2.setStatus(paidStatus);
+
+        when(transactionRepo.findAllByUserUsername("merchant1"))
+                .thenReturn(List.of(paidTx1, declinedTx, paidTx2));
+
+        var stats = paymentService.getStatsForUser("merchant1");
+
+        assertNotNull(stats);
+        assertEquals(3, stats.getTransactionCount());
+        assertEquals(2, stats.getPaidCount());
+        assertEquals(1, stats.getNonPaidCount());
+        assertEquals(new BigDecimal("600.00"), stats.getTotalAmount());
+        assertEquals(new BigDecimal("400.00"), stats.getPaidAmount());
     }
 
 }

@@ -8,4 +8,5 @@ import java.util.List;
 public interface PaymentTransactionRepository extends JpaRepository<PaymentTransactionEntity, Long> {
     List<PaymentTransactionEntity> findByUser_UserId(Long userId);
     List<PaymentTransactionEntity> findByMerchantKey_ApiKey(String apiKey);
+    List<PaymentTransactionEntity> findAllByUserUsername(String username);
 }
