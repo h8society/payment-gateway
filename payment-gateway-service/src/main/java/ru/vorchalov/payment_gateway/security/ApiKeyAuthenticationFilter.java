@@ -28,9 +28,19 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        String path = request.getRequestURI();
+        String method = request.getMethod();
+
+        boolean isPublicPaymentGet = method.equals("GET") && path.matches("/api/payments/\\d+");
+
+        if (isPublicPaymentGet) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String apiKey = request.getHeader("X-Api-Key");
 
-        if (apiKey != null && request.getRequestURI().startsWith("/api")) {
+        if (apiKey != null && path.startsWith("/api")) {
             MerchantKeyEntity key = keyRepository.findByApiKey(apiKey).orElse(null);
 
             if (key != null) {

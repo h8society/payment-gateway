@@ -1,0 +1,152 @@
+package ru.vorchalov.payment_gateway.service.payment;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import ru.vorchalov.payment_gateway.dto.CreatePaymentRequest;
+import ru.vorchalov.payment_gateway.dto.PayTransactionRequest;
+import ru.vorchalov.payment_gateway.dto.PaymentTransactionDto;
+import ru.vorchalov.payment_gateway.dto.MrBinLookupResponse;
+import ru.vorchalov.payment_gateway.entity.GatewaySettingEntity;
+import ru.vorchalov.payment_gateway.entity.PaymentTransactionEntity;
+import ru.vorchalov.payment_gateway.entity.TransactionStatusEntity;
+import ru.vorchalov.payment_gateway.repository.GatewaySettingRepository;
+import ru.vorchalov.payment_gateway.repository.PaymentTransactionRepository;
+import ru.vorchalov.payment_gateway.repository.TransactionStatusRepository;
+import ru.vorchalov.payment_gateway.service.payment.BankEmulatorService;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Optional;
+
+@Service
+public class PaymentTransactionService {
+
+    private final PaymentTransactionRepository transactionRepo;
+    private final TransactionStatusRepository statusRepo;
+    private final GatewaySettingRepository settingRepo;
+    private final CardEncryptionService encryptionService;
+    private final MrBinLookupService mrBinService;
+    private final BankEmulatorService bankEmulatorService;
+
+    public PaymentTransactionService(PaymentTransactionRepository transactionRepo,
+                                     TransactionStatusRepository statusRepo,
+                                     GatewaySettingRepository settingRepo,
+                                     CardEncryptionService encryptionService,
+                                     MrBinLookupService mrBinService,
+                                     BankEmulatorService bankEmulatorService) {
+        this.transactionRepo = transactionRepo;
+        this.statusRepo = statusRepo;
+        this.settingRepo = settingRepo;
+        this.encryptionService = encryptionService;
+        this.mrBinService = mrBinService;
+        this.bankEmulatorService = bankEmulatorService;
+    }
+
+    @Transactional
+    public PaymentTransactionDto createTransaction(CreatePaymentRequest req,
+                                                   Object user, // UserEntity
+                                                   Object key) { // MerchantKeyEntity
+        TransactionStatusEntity createdStatus = statusRepo.findByStatusCode("created")
+                .orElseThrow(() -> new RuntimeException("Status 'created' not found"));
+
+        PaymentTransactionEntity entity = new PaymentTransactionEntity();
+        if (user instanceof ru.vorchalov.payment_gateway.entity.UserEntity) {
+            entity.setUser((ru.vorchalov.payment_gateway.entity.UserEntity) user);
+        }
+        if (key instanceof ru.vorchalov.payment_gateway.entity.MerchantKeyEntity) {
+            entity.setMerchantKey((ru.vorchalov.payment_gateway.entity.MerchantKeyEntity) key);
+        }
+        entity.setAmount(req.getAmount() == null ? BigDecimal.ZERO : req.getAmount());
+        entity.setStatus(createdStatus);
+        entity.setResponseCode("PENDING");
+
+        entity.setCardNumberEnc(encryptionService.encrypt(req.getCardNumber()));
+        entity.setCardExpiryEnc(encryptionService.encrypt(req.getCardExpiry()));
+        entity.setCardCvcEnc(encryptionService.encrypt(req.getCardCvc()));
+
+        transactionRepo.save(entity);
+        return toDto(entity);
+    }
+
+    @Transactional(readOnly = true)
+    public PaymentTransactionDto getTransactionById(Long id) {
+        PaymentTransactionEntity entity = transactionRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Transaction not found: " + id));
+        return toDto(entity);
+    }
+
+    @Transactional
+    public PaymentTransactionDto payTransaction(Long id, PayTransactionRequest req) {
+        PaymentTransactionEntity entity = transactionRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Transaction not found: " + id));
+
+        int ttlMinutes = getPaymentTtlMinutes();
+        long minutesSinceCreation = ChronoUnit.MINUTES.between(entity.getTransactionDate(), LocalDateTime.now());
+        if (minutesSinceCreation > ttlMinutes) {
+            TransactionStatusEntity canceledStatus = statusRepo.findByStatusCode("canceled")
+                    .orElseThrow(() -> new RuntimeException("Status 'canceled' not found"));
+            entity.setStatus(canceledStatus);
+            entity.setResponseCode("TIMEOUT");
+            transactionRepo.save(entity);
+            return toDto(entity);
+        }
+
+        String bin = parseBin(req.getCardNumber());
+        MrBinLookupResponse binInfo = mrBinService.lookup(bin);
+        entity.setBinBrand(binInfo.getBrand());
+        entity.setBinBankName(binInfo.getBank_name());
+        entity.setBinCountry(binInfo.getCountry_name());
+
+        String bankResponse = bankEmulatorService.getResponseCode(req.getCardNumber());
+
+        if ("APPROVED".equalsIgnoreCase(bankResponse.trim())) {
+            TransactionStatusEntity paidStatus = statusRepo.findByStatusCode("paid")
+                    .orElseThrow(() -> new RuntimeException("Status 'paid' not found"));
+            entity.setStatus(paidStatus);
+            entity.setResponseCode("00");
+        } else {
+            TransactionStatusEntity declinedStatus = statusRepo.findByStatusCode("declined")
+                    .orElseThrow(() -> new RuntimeException("Status 'declined' not found"));
+            entity.setStatus(declinedStatus);
+            entity.setResponseCode("05");
+        }
+
+        entity.setCardNumberEnc(encryptionService.encrypt(req.getCardNumber()));
+        entity.setCardExpiryEnc(encryptionService.encrypt(req.getCardExpiry()));
+        entity.setCardCvcEnc(encryptionService.encrypt(req.getCardCvc()));
+
+        transactionRepo.save(entity);
+        return toDto(entity);
+    }
+
+    private String parseBin(String cardNumber) {
+        if (cardNumber == null || cardNumber.length() < 6) {
+            return "000000";
+        }
+        return cardNumber.length() > 12 ? cardNumber.substring(0, 12) : cardNumber;
+    }
+
+    private int getPaymentTtlMinutes() {
+        Optional<GatewaySettingEntity> ttlSetting = settingRepo.findById("PAYMENT_TTL_MINUTES");
+        if (ttlSetting.isPresent()) {
+            return Integer.parseInt(ttlSetting.get().getValue());
+        }
+        return 15;
+    }
+
+    private PaymentTransactionDto toDto(PaymentTransactionEntity e) {
+        PaymentTransactionDto dto = new PaymentTransactionDto();
+        dto.setTransactionId(e.getTransactionId());
+        dto.setAmount(e.getAmount());
+        if (e.getStatus() != null) {
+            dto.setStatusCode(e.getStatus().getStatusCode());
+        }
+        dto.setResponseCode(e.getResponseCode());
+        dto.setTransactionDate(e.getTransactionDate());
+        dto.setBinBrand(e.getBinBrand());
+        dto.setBinBankName(e.getBinBankName());
+        dto.setBinCountry(e.getBinCountry());
+        return dto;
+    }
+}

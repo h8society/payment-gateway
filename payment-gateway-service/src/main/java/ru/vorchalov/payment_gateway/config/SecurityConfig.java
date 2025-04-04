@@ -2,6 +2,7 @@ package ru.vorchalov.payment_gateway.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -35,6 +36,9 @@ public class SecurityConfig {
                         .requestMatchers("/login", "/auth/**", "/error").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/cabinet/**").hasAnyRole("ADMIN", "MERCHANT")
+                        .requestMatchers(HttpMethod.POST, "/api/payments/*/pay").permitAll()
+                        .requestMatchers("/api/payments/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/payments").authenticated()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().denyAll()
                 )

@@ -12,7 +12,7 @@ public class MerchantKeyEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long keyId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 

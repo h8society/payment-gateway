@@ -1,7 +1,6 @@
 package ru.vorchalov.payment_gateway.entity;
 
 import jakarta.persistence.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -13,11 +12,11 @@ public class PaymentTransactionEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long transactionId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id")
     private UserEntity user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "key_id")
     private MerchantKeyEntity merchantKey;
 
@@ -30,7 +29,7 @@ public class PaymentTransactionEntity {
     @Column(nullable = false)
     private String cardCvcEnc;
 
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
 
     @Column(nullable = false)
@@ -39,9 +38,19 @@ public class PaymentTransactionEntity {
     @Column(nullable = false)
     private LocalDateTime transactionDate = LocalDateTime.now();
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "status_id")
     private TransactionStatusEntity status;
+
+    // Ниже поля, куда будем складывать результат mrbin.io
+    @Column
+    private String binBrand;
+
+    @Column
+    private String binBankName;
+
+    @Column
+    private String binCountry;
 
     public Long getTransactionId() {
         return transactionId;
@@ -111,11 +120,39 @@ public class PaymentTransactionEntity {
         return transactionDate;
     }
 
+    public void setTransactionDate (LocalDateTime transactionDate) {
+        this.transactionDate = transactionDate;
+    }
+
     public TransactionStatusEntity getStatus() {
         return status;
     }
 
     public void setStatus(TransactionStatusEntity status) {
         this.status = status;
+    }
+
+    public String getBinBrand() {
+        return binBrand;
+    }
+
+    public void setBinBrand(String binBrand) {
+        this.binBrand = binBrand;
+    }
+
+    public String getBinBankName() {
+        return binBankName;
+    }
+
+    public void setBinBankName(String binBankName) {
+        this.binBankName = binBankName;
+    }
+
+    public String getBinCountry() {
+        return binCountry;
+    }
+
+    public void setBinCountry(String binCountry) {
+        this.binCountry = binCountry;
     }
 }
