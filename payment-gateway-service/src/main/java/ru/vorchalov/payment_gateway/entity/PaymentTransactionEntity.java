@@ -9,8 +9,8 @@ import java.time.LocalDateTime;
 public class PaymentTransactionEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long transactionId;
+    @Column(nullable = false, unique = true, length = 100)
+    private String transactionId;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id")
@@ -42,7 +42,6 @@ public class PaymentTransactionEntity {
     @JoinColumn(name = "status_id")
     private TransactionStatusEntity status;
 
-    // Ниже поля, куда будем складывать результат mrbin.io
     @Column
     private String binBrand;
 
@@ -52,11 +51,11 @@ public class PaymentTransactionEntity {
     @Column
     private String binCountry;
 
-    public Long getTransactionId() {
+    public String getTransactionId() {
         return transactionId;
     }
 
-    public void setTransactionId(Long transactionId) {
+    public void setTransactionId(String transactionId) {
         this.transactionId = transactionId;
     }
 

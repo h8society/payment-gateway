@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -64,7 +65,8 @@ public class MerchantTransactionControllerTest {
         when(userRepository.findByUsername("merchant2")).thenReturn(Optional.of(mockUser));
 
         PaymentTransactionDto dto = new PaymentTransactionDto();
-        dto.setTransactionId(10L);
+        String id = UUID.randomUUID().toString();
+        dto.setTransactionId(id);
         dto.setAmount(new BigDecimal("199.99"));
         dto.setStatusCode("paid");
         dto.setResponseCode("00");
@@ -79,7 +81,7 @@ public class MerchantTransactionControllerTest {
         mockMvc.perform(get("/api/merchant/transactions")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].transactionId").value(10L))
+                .andExpect(jsonPath("$[0].transactionId").value(id))
                 .andExpect(jsonPath("$[0].amount").value(199.99))
                 .andExpect(jsonPath("$[0].statusCode").value("paid"))
                 .andExpect(jsonPath("$[0].responseCode").value("00"))

@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class PaymentTransactionDto {
-    private Long transactionId;
+    private String transactionId;
     private BigDecimal amount;
     private String statusCode;
     private String responseCode;
@@ -13,10 +13,10 @@ public class PaymentTransactionDto {
     private String binBankName;
     private String binCountry;
 
-    public Long getTransactionId() {
+    public String getTransactionId() {
         return transactionId;
     }
-    public void setTransactionId(Long transactionId) {
+    public void setTransactionId(String transactionId) {
         this.transactionId = transactionId;
     }
     public BigDecimal getAmount() {

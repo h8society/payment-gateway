@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -80,7 +81,8 @@ public class AdminControllerTest {
     @DisplayName("getAllTransactions → 200 OK with transaction list")
     void getAllTransactions_ok() {
         PaymentTransactionDto dto = new PaymentTransactionDto();
-        dto.setTransactionId(1L);
+        String id = UUID.randomUUID().toString();
+        dto.setTransactionId(id);
         dto.setAmount(new BigDecimal("99.99"));
         dto.setStatusCode("paid");
         dto.setResponseCode("00");
@@ -99,7 +101,7 @@ public class AdminControllerTest {
         assertEquals(1, list.size());
 
         PaymentTransactionDto returned = list.get(0);
-        assertEquals(1L, returned.getTransactionId());
+        assertEquals(id, returned.getTransactionId());
         assertEquals(new BigDecimal("99.99"), returned.getAmount());
         assertEquals("paid", returned.getStatusCode());
         assertEquals("00", returned.getResponseCode());

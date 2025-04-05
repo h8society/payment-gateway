@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -85,19 +86,20 @@ public class PaymentTransactionServiceTest {
     @Test
     void testGetTransactionById() {
         PaymentTransactionEntity entity = new PaymentTransactionEntity();
-        entity.setTransactionId(1L);
+        String id = UUID.randomUUID().toString();
+        entity.setTransactionId(id);
         entity.setAmount(BigDecimal.valueOf(50.00));
         TransactionStatusEntity status = new TransactionStatusEntity();
         status.setStatusCode("created");
         entity.setStatus(status);
         entity.setResponseCode("PENDING");
         entity.setTransactionDate(LocalDateTime.now());
-        when(transactionRepo.findById(1L)).thenReturn(Optional.of(entity));
+        when(transactionRepo.findById(id)).thenReturn(Optional.of(entity));
 
-        PaymentTransactionDto dto = paymentService.getTransactionById(1L);
+        PaymentTransactionDto dto = paymentService.getTransactionById(id);
 
         assertNotNull(dto);
-        assertEquals(1L, dto.getTransactionId());
+        assertEquals(id, dto.getTransactionId());
         assertEquals(BigDecimal.valueOf(50.00), dto.getAmount());
         assertEquals("created", dto.getStatusCode());
         assertEquals("PENDING", dto.getResponseCode());
@@ -106,14 +108,15 @@ public class PaymentTransactionServiceTest {
     @Test
     void testPayTransaction_TTLExpired() {
         PaymentTransactionEntity entity = new PaymentTransactionEntity();
-        entity.setTransactionId(2L);
+        String id = UUID.randomUUID().toString();
+        entity.setTransactionId(id);
         entity.setAmount(BigDecimal.valueOf(200.00));
         TransactionStatusEntity createdStatus = new TransactionStatusEntity();
         createdStatus.setStatusCode("created");
         entity.setStatus(createdStatus);
         entity.setResponseCode("PENDING");
         entity.setTransactionDate(LocalDateTime.now().minusMinutes(20));
-        when(transactionRepo.findById(2L)).thenReturn(Optional.of(entity));
+        when(transactionRepo.findById(id)).thenReturn(Optional.of(entity));
 
         GatewaySettingEntity ttlSetting = new GatewaySettingEntity();
         ttlSetting.setKey("PAYMENT_TTL_MINUTES");
@@ -129,7 +132,7 @@ public class PaymentTransactionServiceTest {
         req.setCardExpiry("12/25");
         req.setCardCvc("123");
 
-        PaymentTransactionDto dto = paymentService.payTransaction(2L, req);
+        PaymentTransactionDto dto = paymentService.payTransaction(id, req);
 
         assertNotNull(dto);
         assertEquals("canceled", dto.getStatusCode());
@@ -139,14 +142,15 @@ public class PaymentTransactionServiceTest {
     @Test
     void testPayTransaction_Success() {
         PaymentTransactionEntity entity = new PaymentTransactionEntity();
-        entity.setTransactionId(3L);
+        String id = UUID.randomUUID().toString();
+        entity.setTransactionId(id);
         entity.setAmount(BigDecimal.valueOf(300.00));
         TransactionStatusEntity createdStatus = new TransactionStatusEntity();
         createdStatus.setStatusCode("created");
         entity.setStatus(createdStatus);
         entity.setResponseCode("PENDING");
         entity.setTransactionDate(LocalDateTime.now().minusMinutes(5));
-        when(transactionRepo.findById(3L)).thenReturn(Optional.of(entity));
+        when(transactionRepo.findById(id)).thenReturn(Optional.of(entity));
 
         GatewaySettingEntity ttlSetting = new GatewaySettingEntity();
         ttlSetting.setKey("PAYMENT_TTL_MINUTES");
@@ -177,7 +181,7 @@ public class PaymentTransactionServiceTest {
         req.setCardExpiry("12/25");
         req.setCardCvc("123");
 
-        PaymentTransactionDto dto = paymentService.payTransaction(3L, req);
+        PaymentTransactionDto dto = paymentService.payTransaction(id, req);
 
         assertNotNull(dto);
         assertEquals("paid", dto.getStatusCode());
@@ -190,7 +194,8 @@ public class PaymentTransactionServiceTest {
     @Test
     void getTransactionsForUser_returnsMappedDtos() {
         PaymentTransactionEntity tx = new PaymentTransactionEntity();
-        tx.setTransactionId(1L);
+        String id = UUID.randomUUID().toString();
+        tx.setTransactionId(id);
         tx.setAmount(new BigDecimal("99.99"));
         tx.setResponseCode("00");
         tx.setTransactionDate(LocalDateTime.now());
@@ -209,7 +214,7 @@ public class PaymentTransactionServiceTest {
 
         assertEquals(1, result.size());
         PaymentTransactionDto dto = result.get(0);
-        assertEquals(1L, dto.getTransactionId());
+        assertEquals(id, dto.getTransactionId());
         assertEquals(new BigDecimal("99.99"), dto.getAmount());
         assertEquals("paid", dto.getStatusCode());
         assertEquals("00", dto.getResponseCode());
@@ -263,7 +268,8 @@ public class PaymentTransactionServiceTest {
     @Test
     void testPayTransaction_whenUserBlocked_shouldThrow() {
         PaymentTransactionEntity tx = new PaymentTransactionEntity();
-        tx.setTransactionId(10L);
+        String id = UUID.randomUUID().toString();
+        tx.setTransactionId(id);
         tx.setAmount(BigDecimal.TEN);
         tx.setTransactionDate(LocalDateTime.now());
         TransactionStatusEntity status = new TransactionStatusEntity();
@@ -274,7 +280,7 @@ public class PaymentTransactionServiceTest {
         user.setActive(false);
         tx.setUser(user);
 
-        when(transactionRepo.findById(10L)).thenReturn(Optional.of(tx));
+        when(transactionRepo.findById(id)).thenReturn(Optional.of(tx));
 
         PayTransactionRequest req = new PayTransactionRequest();
         req.setCardNumber("4111111111111111");
@@ -282,7 +288,7 @@ public class PaymentTransactionServiceTest {
         req.setCardCvc("123");
 
         RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> paymentService.payTransaction(10L, req));
+                () -> paymentService.payTransaction(id, req));
 
         assertEquals("Merchant is blocked", ex.getMessage());
     }

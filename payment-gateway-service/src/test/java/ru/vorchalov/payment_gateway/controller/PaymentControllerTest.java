@@ -20,6 +20,7 @@ import ru.vorchalov.payment_gateway.service.payment.PaymentTransactionService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -62,8 +63,10 @@ public class PaymentControllerTest {
 
         LocalDateTime fixedDate = LocalDateTime.of(2025, 4, 3, 0, 0);
 
+        String id = UUID.randomUUID().toString();
+
         PaymentTransactionDto dto = new PaymentTransactionDto();
-        dto.setTransactionId(1L);
+        dto.setTransactionId(id);
         dto.setAmount(req.getAmount());
         dto.setStatusCode("created");
         dto.setResponseCode("PENDING");
@@ -85,27 +88,29 @@ public class PaymentControllerTest {
                         .content(objectMapper.writeValueAsString(req)))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.transactionId", is(1)))
-                .andExpect(jsonPath("$.statusCode", is("created")));
+                .andExpect(jsonPath("$.transactionId", is(id)))
+                .andExpect(jsonPath("$.formUrl", is("http://localhost:5173/pay/" + id)));
     }
 
     @Test
     void testGetPayment() throws Exception {
         LocalDateTime fixedDate = LocalDateTime.of(2025, 4, 3, 0, 0);
 
+        String id = UUID.randomUUID().toString();
+
         PaymentTransactionDto dto = new PaymentTransactionDto();
-        dto.setTransactionId(1L);
+        dto.setTransactionId(id);
         dto.setAmount(BigDecimal.valueOf(100.00));
         dto.setStatusCode("created");
         dto.setResponseCode("PENDING");
         dto.setTransactionDate(fixedDate);
 
-        when(paymentService.getTransactionById(eq(1L))).thenReturn(dto);
+        when(paymentService.getTransactionById(eq(id))).thenReturn(dto);
 
-        mockMvc.perform(get("/api/payments/1"))
+        mockMvc.perform(get("/api/payments/" + id))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.transactionId", is(1)))
+                .andExpect(jsonPath("$.transactionId", is(id)))
                 .andExpect(jsonPath("$.statusCode", is("created")));
     }
 
@@ -118,22 +123,24 @@ public class PaymentControllerTest {
 
         LocalDateTime fixedDate = LocalDateTime.of(2025, 4, 3, 0, 0);
 
+        String id = UUID.randomUUID().toString();
+
         PaymentTransactionDto dto = new PaymentTransactionDto();
-        dto.setTransactionId(1L);
+        dto.setTransactionId(id);
         dto.setAmount(BigDecimal.valueOf(100.00));
         dto.setStatusCode("paid");
         dto.setResponseCode("00");
         dto.setTransactionDate(fixedDate);
 
-        when(paymentService.payTransaction(eq(1L), any(PayTransactionRequest.class))).thenReturn(dto);
+        when(paymentService.payTransaction(eq(id), any(PayTransactionRequest.class))).thenReturn(dto);
 
-        mockMvc.perform(post("/api/payments/1/pay")
+        mockMvc.perform(post("/api/payments/" + id + "/pay")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.transactionId", is(1)))
+                .andExpect(jsonPath("$.transactionId", is(id)))
                 .andExpect(jsonPath("$.statusCode", is("paid")));
     }
 }

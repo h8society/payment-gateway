@@ -5,7 +5,7 @@ import ru.vorchalov.payment_gateway.entity.PaymentTransactionEntity;
 
 import java.util.List;
 
-public interface PaymentTransactionRepository extends JpaRepository<PaymentTransactionEntity, Long> {
+public interface PaymentTransactionRepository extends JpaRepository<PaymentTransactionEntity, String> {
     List<PaymentTransactionEntity> findByUser_UserId(Long userId);
     List<PaymentTransactionEntity> findByMerchantKey_ApiKey(String apiKey);
     List<PaymentTransactionEntity> findAllByUserUsername(String username);

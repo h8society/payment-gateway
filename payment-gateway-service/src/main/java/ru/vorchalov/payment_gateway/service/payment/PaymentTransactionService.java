@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -63,6 +64,9 @@ public class PaymentTransactionService {
         entity.setStatus(createdStatus);
         entity.setResponseCode("PENDING");
 
+        String transactionId = UUID.randomUUID().toString();
+
+        entity.setTransactionId(transactionId);
         entity.setCardNumberEnc(encryptionService.encrypt(req.getCardNumber()));
         entity.setCardExpiryEnc(encryptionService.encrypt(req.getCardExpiry()));
         entity.setCardCvcEnc(encryptionService.encrypt(req.getCardCvc()));
@@ -72,14 +76,14 @@ public class PaymentTransactionService {
     }
 
     @Transactional(readOnly = true)
-    public PaymentTransactionDto getTransactionById(Long id) {
+    public PaymentTransactionDto getTransactionById(String id) {
         PaymentTransactionEntity entity = transactionRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Transaction not found: " + id));
         return toDto(entity);
     }
 
     @Transactional
-    public PaymentTransactionDto payTransaction(Long id, PayTransactionRequest req) {
+    public PaymentTransactionDto payTransaction(String id, PayTransactionRequest req) {
         PaymentTransactionEntity entity = transactionRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Transaction not found: " + id));
 
