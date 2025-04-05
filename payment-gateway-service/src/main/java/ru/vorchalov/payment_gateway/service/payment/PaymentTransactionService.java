@@ -6,16 +6,17 @@ import ru.vorchalov.payment_gateway.dto.*;
 import ru.vorchalov.payment_gateway.entity.GatewaySettingEntity;
 import ru.vorchalov.payment_gateway.entity.PaymentTransactionEntity;
 import ru.vorchalov.payment_gateway.entity.TransactionStatusEntity;
+import ru.vorchalov.payment_gateway.entity.UserEntity;
 import ru.vorchalov.payment_gateway.repository.GatewaySettingRepository;
 import ru.vorchalov.payment_gateway.repository.PaymentTransactionRepository;
 import ru.vorchalov.payment_gateway.repository.TransactionStatusRepository;
-import ru.vorchalov.payment_gateway.service.payment.BankEmulatorService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class PaymentTransactionService {
@@ -43,8 +44,11 @@ public class PaymentTransactionService {
 
     @Transactional
     public PaymentTransactionDto createTransaction(CreatePaymentRequest req,
-                                                   Object user, // UserEntity
-                                                   Object key) { // MerchantKeyEntity
+                                                   Object user,
+                                                   Object key) {
+        if (user instanceof UserEntity u && !u.isActive()) {
+            throw new RuntimeException("Merchant is blocked");
+        }
         TransactionStatusEntity createdStatus = statusRepo.findByStatusCode("created")
                 .orElseThrow(() -> new RuntimeException("Status 'created' not found"));
 
@@ -78,6 +82,11 @@ public class PaymentTransactionService {
     public PaymentTransactionDto payTransaction(Long id, PayTransactionRequest req) {
         PaymentTransactionEntity entity = transactionRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Transaction not found: " + id));
+
+        UserEntity user = entity.getUser();
+        if (user != null && !user.isActive()) {
+            throw new RuntimeException("Merchant is blocked");
+        }
 
         int ttlMinutes = getPaymentTtlMinutes();
         long minutesSinceCreation = ChronoUnit.MINUTES.between(entity.getTransactionDate(), LocalDateTime.now());
@@ -181,6 +190,25 @@ public class PaymentTransactionService {
         dto.setTotalAmount(totalAmount);
         dto.setPaidAmount(paidAmount);
         return dto;
+    }
+
+    public List<PaymentTransactionDto> getAllTransactions() {
+        List<PaymentTransactionEntity> entities = transactionRepo.findAll();
+
+        return entities.stream()
+                .map(tx -> {
+                    PaymentTransactionDto dto = new PaymentTransactionDto();
+                    dto.setTransactionId(tx.getTransactionId());
+                    dto.setAmount(tx.getAmount());
+                    dto.setStatusCode(tx.getStatus().getStatusCode());
+                    dto.setResponseCode(tx.getResponseCode());
+                    dto.setTransactionDate(tx.getTransactionDate());
+                    dto.setBinBrand(tx.getBinBrand());
+                    dto.setBinBankName(tx.getBinBankName());
+                    dto.setBinCountry(tx.getBinCountry());
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
 }

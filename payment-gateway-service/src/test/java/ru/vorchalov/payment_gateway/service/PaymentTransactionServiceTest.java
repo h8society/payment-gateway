@@ -11,6 +11,7 @@ import ru.vorchalov.payment_gateway.dto.MrBinLookupResponse;
 import ru.vorchalov.payment_gateway.entity.GatewaySettingEntity;
 import ru.vorchalov.payment_gateway.entity.PaymentTransactionEntity;
 import ru.vorchalov.payment_gateway.entity.TransactionStatusEntity;
+import ru.vorchalov.payment_gateway.entity.UserEntity;
 import ru.vorchalov.payment_gateway.repository.GatewaySettingRepository;
 import ru.vorchalov.payment_gateway.repository.PaymentTransactionRepository;
 import ru.vorchalov.payment_gateway.repository.TransactionStatusRepository;
@@ -257,6 +258,33 @@ public class PaymentTransactionServiceTest {
         assertEquals(1, stats.getNonPaidCount());
         assertEquals(new BigDecimal("600.00"), stats.getTotalAmount());
         assertEquals(new BigDecimal("400.00"), stats.getPaidAmount());
+    }
+
+    @Test
+    void testPayTransaction_whenUserBlocked_shouldThrow() {
+        PaymentTransactionEntity tx = new PaymentTransactionEntity();
+        tx.setTransactionId(10L);
+        tx.setAmount(BigDecimal.TEN);
+        tx.setTransactionDate(LocalDateTime.now());
+        TransactionStatusEntity status = new TransactionStatusEntity();
+        status.setStatusCode("created");
+        tx.setStatus(status);
+
+        UserEntity user = new UserEntity();
+        user.setActive(false);
+        tx.setUser(user);
+
+        when(transactionRepo.findById(10L)).thenReturn(Optional.of(tx));
+
+        PayTransactionRequest req = new PayTransactionRequest();
+        req.setCardNumber("4111111111111111");
+        req.setCardExpiry("12/25");
+        req.setCardCvc("123");
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> paymentService.payTransaction(10L, req));
+
+        assertEquals("Merchant is blocked", ex.getMessage());
     }
 
 }
