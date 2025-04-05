@@ -31,7 +31,7 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         String method = request.getMethod();
 
-        boolean isPublicPaymentGet = method.equals("GET") && path.matches("/api/payments/\\d+");
+        boolean isPublicPaymentGet = method.equals("GET") && path.matches("/api/payments/[0-9a-fA-F\\\\-]{36}$");
 
         if (isPublicPaymentGet) {
             filterChain.doFilter(request, response);
