@@ -27,13 +27,31 @@ public class RegistrationService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public String registerMerchant(RegistrationRequest request) {
+    public MerchantKeyEntity generateApiKeyForUser(UserEntity user, String description) {
+        MerchantKeyEntity key = new MerchantKeyEntity();
+        key.setUser(user);
+        key.setApiKey(UUID.randomUUID().toString());
+        key.setDescription(description);
+        key.setCreatedAt(java.time.LocalDateTime.now());
+        key.setValidUntil(java.time.LocalDateTime.now().plusYears(1));
+
+        return keyRepo.save(key);
+    }
+
+    public String registerUser(RegistrationRequest request) {
+        RoleEntity role;
+
         if (userRepo.findByUsername(request.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists");
         }
 
-        RoleEntity role = roleRepo.findByRoleName("MERCHANT")
-                .orElseThrow(() -> new RuntimeException("MERCHANT role not found"));
+        if(request.getRoleName() == null || request.getRoleName().isEmpty()) {
+            role = roleRepo.findByRoleName(request.getRoleName())
+                    .orElseThrow(() -> new RuntimeException(request.getRoleName() + " role not found"));
+        } else {
+            role = roleRepo.findByRoleName("MERCHANT")
+                    .orElseThrow(() -> new RuntimeException("MERCHANT role not found"));
+        }
 
         UserEntity user = new UserEntity();
         user.setUsername(request.getUsername());
@@ -42,14 +60,8 @@ public class RegistrationService {
         user.setRoles(Set.of(role));
         user = userRepo.save(user);
 
-        String apiKey = UUID.randomUUID().toString();
-        MerchantKeyEntity key = new MerchantKeyEntity();
-        key.setUser(user);
-        key.setApiKey(apiKey);
-        key.setDescription("Initial key");
+        MerchantKeyEntity key = generateApiKeyForUser(user, "Initial key");
 
-        keyRepo.save(key);
-
-        return apiKey;
+        return key.getApiKey();
     }
 }

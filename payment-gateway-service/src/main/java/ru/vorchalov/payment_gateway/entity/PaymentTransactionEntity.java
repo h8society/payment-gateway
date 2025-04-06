@@ -75,24 +75,12 @@ public class PaymentTransactionEntity {
         this.merchantKey = merchantKey;
     }
 
-    public String getCardNumberEnc() {
-        return cardNumberEnc;
-    }
-
     public void setCardNumberEnc(String cardNumberEnc) {
         this.cardNumberEnc = cardNumberEnc;
     }
 
-    public String getCardExpiryEnc() {
-        return cardExpiryEnc;
-    }
-
     public void setCardExpiryEnc(String cardExpiryEnc) {
         this.cardExpiryEnc = cardExpiryEnc;
-    }
-
-    public String getCardCvcEnc() {
-        return cardCvcEnc;
     }
 
     public void setCardCvcEnc(String cardCvcEnc) {

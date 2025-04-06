@@ -9,18 +9,6 @@ public class MrBinLookupResponse {
     private String country_name;
     private String bank_name;
 
-    public String getScheme() {
-        return scheme;
-    }
-    public void setScheme(String scheme) {
-        this.scheme = scheme;
-    }
-    public String getBrand() {
-        return brand;
-    }
-    public void setBrand(String brand) {
-        this.brand = brand;
-    }
     public String getCountry_name() {
         return country_name;
     }

@@ -28,14 +28,6 @@ public class MerchantKeyEntity {
     @Column
     private LocalDateTime validUntil;
 
-    public Long getKeyId() {
-        return keyId;
-    }
-
-    public void setKeyId(Long keyId) {
-        this.keyId = keyId;
-    }
-
     public UserEntity getUser() {
         return user;
     }
@@ -52,20 +44,12 @@ public class MerchantKeyEntity {
         this.apiKey = apiKey;
     }
 
-    public String getDescription() {
-        return description;
-    }
-
     public void setDescription(String description) {
         this.description = description;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public LocalDateTime getValidUntil() {
-        return validUntil;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public void setValidUntil(LocalDateTime validUntil) {

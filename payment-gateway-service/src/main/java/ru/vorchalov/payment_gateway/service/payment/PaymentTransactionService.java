@@ -1,5 +1,6 @@
 package ru.vorchalov.payment_gateway.service.payment;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.vorchalov.payment_gateway.dto.*;
@@ -19,6 +20,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class PaymentTransactionService {
 
@@ -152,6 +154,30 @@ public class PaymentTransactionService {
         return 15;
     }
 
+    @Transactional
+    public void autoDeclineExpiredTransactions() {
+        int ttlMinutes = getPaymentTtlMinutes();
+        LocalDateTime now = LocalDateTime.now();
+
+        TransactionStatusEntity createdStatus = statusRepo.findByStatusCode("created")
+                .orElseThrow(() -> new RuntimeException("Status 'created' not found"));
+        TransactionStatusEntity declinedStatus = statusRepo.findByStatusCode("declined")
+                .orElseThrow(() -> new RuntimeException("Status 'declined' not found"));
+
+        List<PaymentTransactionEntity> expired = transactionRepo.findAllByStatus(createdStatus).stream()
+                .filter(tx -> tx.getTransactionDate().plusMinutes(ttlMinutes).isBefore(now))
+                .toList();
+
+        for (PaymentTransactionEntity tx : expired) {
+            tx.setStatus(declinedStatus);
+            tx.setResponseCode("EXPIRED");
+        }
+
+        log.info("🔻 Отклонено {} просроченных транзакций", expired.size());
+
+        transactionRepo.saveAll(expired);
+    }
+
     private PaymentTransactionDto toDto(PaymentTransactionEntity e) {
         PaymentTransactionDto dto = new PaymentTransactionDto();
         dto.setTransactionId(e.getTransactionId());
@@ -164,6 +190,10 @@ public class PaymentTransactionService {
         dto.setBinBrand(e.getBinBrand());
         dto.setBinBankName(e.getBinBankName());
         dto.setBinCountry(e.getBinCountry());
+
+        int ttlMinutes = getPaymentTtlMinutes();
+        dto.setExpiredAt(e.getTransactionDate().plusMinutes(ttlMinutes));
+
         return dto;
     }
 

@@ -1,8 +1,11 @@
 package ru.vorchalov.payment_gateway.dto;
 
+import lombok.Data;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+@Data
 public class PaymentTransaction {
     private Long transactionId;
     private BigDecimal amount;
@@ -13,67 +16,4 @@ public class PaymentTransaction {
     private String binBankName;
     private String binCountry;
 
-    public Long getTransactionId() {
-        return transactionId;
-    }
-
-    public void setTransactionId(Long transactionId) {
-        this.transactionId = transactionId;
-    }
-
-    public BigDecimal getAmount() {
-        return amount;
-    }
-
-    public void setAmount(BigDecimal amount) {
-        this.amount = amount;
-    }
-
-    public String getStatusCode() {
-        return statusCode;
-    }
-
-    public void setStatusCode(String statusCode) {
-        this.statusCode = statusCode;
-    }
-
-    public String getResponseCode() {
-        return responseCode;
-    }
-
-    public void setResponseCode(String responseCode) {
-        this.responseCode = responseCode;
-    }
-
-    public LocalDateTime getTransactionDate() {
-        return transactionDate;
-    }
-
-    public void setTransactionDate(LocalDateTime transactionDate) {
-        this.transactionDate = transactionDate;
-    }
-
-    public String getBinBrand() {
-        return binBrand;
-    }
-
-    public void setBinBrand(String binBrand) {
-        this.binBrand = binBrand;
-    }
-
-    public String getBinBankName() {
-        return binBankName;
-    }
-
-    public void setBinBankName(String binBankName) {
-        this.binBankName = binBankName;
-    }
-
-    public String getBinCountry() {
-        return binCountry;
-    }
-
-    public void setBinCountry(String binCountry) {
-        this.binCountry = binCountry;
-    }
 }

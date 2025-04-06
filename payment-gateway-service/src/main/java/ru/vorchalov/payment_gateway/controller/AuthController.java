@@ -40,7 +40,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegistrationRequest request) {
         try {
-            String apiKey = registrationService.registerMerchant(request);
+            String apiKey = registrationService.registerUser(request);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Регистрация успешна");
@@ -73,4 +73,21 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Ошибка входа: " + e.getMessage());
         }
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logout(HttpServletRequest request, HttpServletResponse response) {
+        try {
+            request.logout();
+            request.getSession().invalidate();
+            response.setHeader("Set-Cookie", "JSESSIONID=; HttpOnly; Path=/; Max-Age=0");
+
+            Map<String, String> resp = new HashMap<>();
+            resp.put("message", "Выход выполнен успешно");
+
+            return ResponseEntity.ok(resp);
+        } catch (ServletException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Ошибка при выходе: " + e.getMessage());
+        }
+    }
+
 }

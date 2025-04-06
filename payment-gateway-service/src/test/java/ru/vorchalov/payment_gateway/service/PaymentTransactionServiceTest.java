@@ -293,4 +293,45 @@ public class PaymentTransactionServiceTest {
         assertEquals("Merchant is blocked", ex.getMessage());
     }
 
+    @Test
+    void testAutoDeclineExpiredTransactions() {
+        PaymentTransactionEntity tx1 = new PaymentTransactionEntity();
+        tx1.setTransactionId("tx1");
+        tx1.setTransactionDate(LocalDateTime.now().minusMinutes(20));
+        tx1.setResponseCode("PENDING");
+
+        PaymentTransactionEntity tx2 = new PaymentTransactionEntity();
+        tx2.setTransactionId("tx2");
+        tx2.setTransactionDate(LocalDateTime.now().minusMinutes(5));
+        tx2.setResponseCode("PENDING");
+
+        TransactionStatusEntity createdStatus = new TransactionStatusEntity();
+        createdStatus.setStatusCode("created");
+        TransactionStatusEntity declinedStatus = new TransactionStatusEntity();
+        declinedStatus.setStatusCode("declined");
+
+        tx1.setStatus(createdStatus);
+        tx2.setStatus(createdStatus);
+
+        when(statusRepo.findByStatusCode("created")).thenReturn(Optional.of(createdStatus));
+        when(statusRepo.findByStatusCode("declined")).thenReturn(Optional.of(declinedStatus));
+        when(transactionRepo.findAllByStatus(createdStatus)).thenReturn(List.of(tx1, tx2));
+        when(settingRepo.findById("PAYMENT_TTL_MINUTES")).thenReturn(
+                Optional.of(new GatewaySettingEntity() {{
+                    setKey("PAYMENT_TTL_MINUTES");
+                    setValue("15");
+                }})
+        );
+
+        paymentService.autoDeclineExpiredTransactions();
+
+        assertEquals("declined", tx1.getStatus().getStatusCode());
+        assertEquals("EXPIRED", tx1.getResponseCode());
+
+        assertEquals("created", tx2.getStatus().getStatusCode());
+        assertEquals("PENDING", tx2.getResponseCode());
+
+        verify(transactionRepo, times(1)).saveAll(List.of(tx1));
+    }
+
 }

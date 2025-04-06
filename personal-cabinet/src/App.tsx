@@ -1,34 +1,77 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import {BrowserRouter, Route, Routes} from "react-router-dom";
+import LoginPage from './pages/LoginPage';
+import CabinetPage from './pages/CabinetPage';
+import {AuthProvider} from "./context/AuthProvider.tsx";
+import PrivateRoute from "./routes/PrivateRoute.tsx";
+import AdminUsersPage from "./pages/AdminUsersPage.tsx";
+import AdminTransactionsPage from "./pages/AdminTransactionsPage.tsx";
+import AdminSettingsPage from "./pages/AdminSettingsPage.tsx";
+import AdminLayout from "./layout/AdminLayout.tsx";
+import HomeRedirect from "./routes/HomeRedirect.tsx";
+import MerchantApiKeysPage from "./pages/MerchantApiKeysPage.tsx";
+import MerchantLayout from "./layout/MerchantLayout.tsx";
 
 function App() {
-  const [count, setCount] = useState(0)
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+      <AuthProvider>
+        <BrowserRouter>
+              <Routes>
+                  <Route path="/" element={<HomeRedirect />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route
+                      path="/cabinet"
+                      element={
+                          <PrivateRoute  requiredRoles={['MERCHANT']}>
+                              <MerchantLayout>
+                                  <CabinetPage />
+                              </MerchantLayout>
+                          </PrivateRoute>
+                      }
+                  />
+                  <Route
+                      path="/cabinet/keys"
+                      element={
+                          <PrivateRoute requiredRoles={['MERCHANT']}>
+                              <MerchantLayout>
+                                  <MerchantApiKeysPage />
+                              </MerchantLayout>
+                          </PrivateRoute>
+                      }
+                  />
+                  <Route
+                      path="/admin/users"
+                      element={
+                          <PrivateRoute requiredRoles={['ADMIN']}>
+                              <AdminLayout>
+                                  <AdminUsersPage />
+                              </AdminLayout>
+                          </PrivateRoute>
+                      }
+                  />
+                  <Route
+                      path="/admin/transactions"
+                      element={
+                          <PrivateRoute requiredRoles={['ADMIN']}>
+                              <AdminLayout>
+                                  <AdminTransactionsPage />
+                              </AdminLayout>
+                          </PrivateRoute>
+                      }
+                  />
+                  <Route
+                      path="/admin/settings"
+                      element={
+                          <PrivateRoute requiredRoles={['ADMIN']}>
+                              <AdminLayout>
+                                  <AdminSettingsPage />
+                              </AdminLayout>
+                          </PrivateRoute>
+                      }
+                  />
+              </Routes>
+        </BrowserRouter>
+      </AuthProvider>
   )
 }
 

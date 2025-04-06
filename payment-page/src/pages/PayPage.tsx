@@ -58,9 +58,6 @@ const PayPage: React.FC = () => {
 
             try {
                 const res = await fetch(`http://localhost:8080/api/payments/${transactionId}`, {
-                    headers: {
-                        'X-Api-Key': 'dc798360-3b0d-4bdd-ae57-318e626f1f58',
-                    },
                     credentials: 'include',
                 });
                 const data = await res.json();
@@ -81,7 +78,7 @@ const PayPage: React.FC = () => {
 
         if (USE_MOCK) {
             setTimeout(() => {
-                setResult('✅ Payment successful!');
+                setResult('❌ Payment failed');
                 setLoading(false);
             }, 1500);
             return;

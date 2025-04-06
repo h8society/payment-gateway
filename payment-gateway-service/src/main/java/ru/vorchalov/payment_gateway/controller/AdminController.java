@@ -86,5 +86,12 @@ public class AdminController {
 
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/settings")
+    public ResponseEntity<List<GatewaySettingEntity>> getSettingsList() {
+        List<GatewaySettingEntity> settings = settingRepository.findAll();
+
+        return ResponseEntity.ok(settings);
+    }
 }
 

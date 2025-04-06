@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import ru.vorchalov.payment_gateway.dto.MerchantInfoDto;
 import ru.vorchalov.payment_gateway.dto.MerchantStatsDto;
 import ru.vorchalov.payment_gateway.entity.UserEntity;
+import ru.vorchalov.payment_gateway.repository.MerchantKeyRepository;
 import ru.vorchalov.payment_gateway.repository.UserRepository;
 import ru.vorchalov.payment_gateway.service.payment.PaymentTransactionService;
 
@@ -26,6 +27,9 @@ public class MerchantInfoControllerTest {
     @Mock
     private PaymentTransactionService transactionService;
 
+    @Mock
+    private MerchantKeyRepository merchantKeyRepository;
+
     @InjectMocks
     private MerchantInfoController merchantInfoController;
 
@@ -39,6 +43,7 @@ public class MerchantInfoControllerTest {
     void getCurrentMerchant_ok() {
         Authentication auth = mock(Authentication.class);
         when(auth.getName()).thenReturn("merchant1");
+        when(auth.isAuthenticated()).thenReturn(true);
 
         UserEntity user = new UserEntity();
         user.setUserId(1L);

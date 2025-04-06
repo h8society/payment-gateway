@@ -12,6 +12,7 @@ public class PaymentTransactionDto {
     private String binBrand;
     private String binBankName;
     private String binCountry;
+    private LocalDateTime expiredAt;
 
     public String getTransactionId() {
         return transactionId;
@@ -60,5 +61,13 @@ public class PaymentTransactionDto {
     }
     public void setBinCountry(String binCountry) {
         this.binCountry = binCountry;
+    }
+
+    public LocalDateTime getExpiredAt() {
+        return expiredAt;
+    }
+
+    public void setExpiredAt(LocalDateTime expiredAt) {
+        this.expiredAt = expiredAt;
     }
 }
