@@ -1,6 +1,8 @@
 package ru.vorchalov.payment_gateway.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.GenericGenerator;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -10,6 +12,8 @@ public class PaymentTransactionEntity {
 
     @Id
     @Column(nullable = false, unique = true, length = 100)
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
     private String transactionId;
 
     @ManyToOne(fetch = FetchType.EAGER)
@@ -20,13 +24,13 @@ public class PaymentTransactionEntity {
     @JoinColumn(name = "key_id")
     private MerchantKeyEntity merchantKey;
 
-    @Column(nullable = false)
+    @Column
     private String cardNumberEnc;
 
-    @Column(nullable = false)
+    @Column
     private String cardExpiryEnc;
 
-    @Column(nullable = false)
+    @Column
     private String cardCvcEnc;
 
     @Column(nullable = false, precision = 12, scale = 2)
@@ -50,6 +54,41 @@ public class PaymentTransactionEntity {
 
     @Column
     private String binCountry;
+
+    @ManyToOne
+    @JoinColumn(name = "shop_id")
+    private ShopEntity shop;
+
+    @Column(name = "order_number", unique = true)
+    private String orderNumber;
+
+    @ManyToOne
+    @JoinColumn(name = "original_transaction_id")
+    private PaymentTransactionEntity originalTransaction;
+
+    public PaymentTransactionEntity getOriginalTransaction() {
+        return this.originalTransaction;
+    }
+
+    public void setOriginalTransaction(PaymentTransactionEntity originalTransaction) {
+        this.originalTransaction = originalTransaction;
+    }
+
+    public ShopEntity getShop(){
+        return shop;
+    }
+
+    public void setShop(ShopEntity shop){
+        this.shop = shop;
+    }
+
+    public String getOrderNumber() {
+        return orderNumber;
+    }
+
+    public void setOrderNumber(String orderNumber) {
+        this.orderNumber = orderNumber;
+    }
 
     public String getTransactionId() {
         return transactionId;
@@ -141,5 +180,17 @@ public class PaymentTransactionEntity {
 
     public void setBinCountry(String binCountry) {
         this.binCountry = binCountry;
+    }
+
+    public String getCardNumberEnc() {
+        return cardNumberEnc;
+    }
+
+    public String getCardExpiryEnc() {
+        return  cardExpiryEnc;
+    }
+
+    public String getCardCvcEnc() {
+        return cardCvcEnc;
     }
 }

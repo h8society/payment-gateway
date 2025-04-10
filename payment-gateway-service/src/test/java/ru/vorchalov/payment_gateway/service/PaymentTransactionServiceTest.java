@@ -3,17 +3,16 @@ package ru.vorchalov.payment_gateway.service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import ru.vorchalov.payment_gateway.dto.CreatePaymentRequest;
 import ru.vorchalov.payment_gateway.dto.PayTransactionRequest;
 import ru.vorchalov.payment_gateway.dto.PaymentTransactionDto;
 import ru.vorchalov.payment_gateway.dto.MrBinLookupResponse;
-import ru.vorchalov.payment_gateway.entity.GatewaySettingEntity;
-import ru.vorchalov.payment_gateway.entity.PaymentTransactionEntity;
-import ru.vorchalov.payment_gateway.entity.TransactionStatusEntity;
-import ru.vorchalov.payment_gateway.entity.UserEntity;
+import ru.vorchalov.payment_gateway.entity.*;
 import ru.vorchalov.payment_gateway.repository.GatewaySettingRepository;
 import ru.vorchalov.payment_gateway.repository.PaymentTransactionRepository;
+import ru.vorchalov.payment_gateway.repository.ShopRepository;
 import ru.vorchalov.payment_gateway.repository.TransactionStatusRepository;
 import ru.vorchalov.payment_gateway.service.payment.BankEmulatorService;
 import ru.vorchalov.payment_gateway.service.payment.CardEncryptionService;
@@ -27,6 +26,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @ActiveProfiles("test")
@@ -40,6 +40,12 @@ public class PaymentTransactionServiceTest {
 
     @Mock
     private GatewaySettingRepository settingRepo;
+
+    @Mock
+    private ShopRepository shopRepo;
+
+    @Mock
+    private JdbcTemplate jdbcTemplate;
 
     @Mock
     private CardEncryptionService encryptionService;
@@ -65,6 +71,7 @@ public class PaymentTransactionServiceTest {
         req.setCardNumber("4111111111111111");
         req.setCardExpiry("12/25");
         req.setCardCvc("123");
+        req.setShopId(1L);
 
         TransactionStatusEntity createdStatus = new TransactionStatusEntity();
         createdStatus.setStatusCode("created");
@@ -73,13 +80,20 @@ public class PaymentTransactionServiceTest {
         when(transactionRepo.save(any(PaymentTransactionEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        PaymentTransactionDto dto = paymentService.createTransaction(req, null, null);
+        MerchantKeyEntity key = new MerchantKeyEntity();
+        UserEntity merchant = new UserEntity();
+        ShopEntity shop = new ShopEntity();
+        shop.setShopId(1L);
+        merchant.setUserId(1L);
+        key.setUser(merchant);
+        when(shopRepo.findByShopIdAndMerchant(1L, merchant)).thenReturn(Optional.of(shop));
+
+        PaymentTransactionDto dto = paymentService.createTransaction(req, merchant, key);
 
         assertNotNull(dto);
         assertEquals(BigDecimal.valueOf(100.00), dto.getAmount());
         assertEquals("created", dto.getStatusCode());
         assertEquals("PENDING", dto.getResponseCode());
-        verify(encryptionService, times(3)).encrypt(any());
         verify(transactionRepo, times(1)).save(any(PaymentTransactionEntity.class));
     }
 
@@ -94,6 +108,9 @@ public class PaymentTransactionServiceTest {
         entity.setStatus(status);
         entity.setResponseCode("PENDING");
         entity.setTransactionDate(LocalDateTime.now());
+        ShopEntity shop = new ShopEntity();
+        shop.setName("shop");
+        entity.setShop(shop);
         when(transactionRepo.findById(id)).thenReturn(Optional.of(entity));
 
         PaymentTransactionDto dto = paymentService.getTransactionById(id);
@@ -116,6 +133,9 @@ public class PaymentTransactionServiceTest {
         entity.setStatus(createdStatus);
         entity.setResponseCode("PENDING");
         entity.setTransactionDate(LocalDateTime.now().minusMinutes(20));
+        ShopEntity shop = new ShopEntity();
+        shop.setName("shop");
+        entity.setShop(shop);
         when(transactionRepo.findById(id)).thenReturn(Optional.of(entity));
 
         GatewaySettingEntity ttlSetting = new GatewaySettingEntity();
@@ -150,6 +170,9 @@ public class PaymentTransactionServiceTest {
         entity.setStatus(createdStatus);
         entity.setResponseCode("PENDING");
         entity.setTransactionDate(LocalDateTime.now().minusMinutes(5));
+        ShopEntity shop = new ShopEntity();
+        shop.setName("shop");
+        entity.setShop(shop);
         when(transactionRepo.findById(id)).thenReturn(Optional.of(entity));
 
         GatewaySettingEntity ttlSetting = new GatewaySettingEntity();
@@ -202,6 +225,9 @@ public class PaymentTransactionServiceTest {
         tx.setBinBrand("VISA");
         tx.setBinBankName("Test Bank");
         tx.setBinCountry("Germany");
+        ShopEntity shop = new ShopEntity();
+        shop.setName("shop");
+        tx.setShop(shop);
 
         TransactionStatusEntity status = new TransactionStatusEntity();
         status.setStatusCode("paid");
@@ -332,6 +358,48 @@ public class PaymentTransactionServiceTest {
         assertEquals("PENDING", tx2.getResponseCode());
 
         verify(transactionRepo, times(1)).saveAll(List.of(tx1));
+    }
+
+    @Test
+    void refundTransaction_createsNewRefundTransaction() {
+        // Given
+        String originalId = UUID.randomUUID().toString();
+        UserEntity user = new UserEntity();
+        user.setUserId(1L);
+
+        ShopEntity shop = new ShopEntity();
+        shop.setShopId(2L);
+
+        TransactionStatusEntity paidStatus = new TransactionStatusEntity();
+        paidStatus.setStatusCode("paid");
+
+        TransactionStatusEntity refundStatus = new TransactionStatusEntity();
+        refundStatus.setStatusCode("refund");
+
+        PaymentTransactionEntity original = new PaymentTransactionEntity();
+        original.setTransactionId(originalId);
+        original.setUser(user);
+        original.setShop(shop);
+        original.setAmount(BigDecimal.valueOf(99.99));
+        original.setStatus(paidStatus);
+        original.setOrderNumber("ORD-12345");
+
+        when(transactionRepo.findById(originalId)).thenReturn(Optional.of(original));
+        when(statusRepo.findByStatusCode("refund")).thenReturn(Optional.of(refundStatus));
+
+        ArgumentCaptor<PaymentTransactionEntity> captor = ArgumentCaptor.forClass(PaymentTransactionEntity.class);
+        when(transactionRepo.save(captor.capture())).thenAnswer(i -> i.getArgument(0));
+
+        PaymentTransactionDto dto = paymentService.refundTransaction(originalId);
+
+        PaymentTransactionEntity saved = captor.getValue();
+        assertEquals(saved.getAmount(), original.getAmount());
+        assertEquals(saved.getStatus().getStatusCode(), "refund");
+        assertEquals(saved.getShop(), shop);
+        assertEquals(saved.getUser(), user);
+        assertEquals(saved.getOrderNumber(), "REFUND-ORD-12345");
+        assertEquals(saved.getOriginalTransaction(), original);
+        assertEquals(dto.getAmount(), original.getAmount());
     }
 
 }

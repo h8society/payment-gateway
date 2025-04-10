@@ -14,6 +14,7 @@ import ru.vorchalov.payment_gateway.dto.PaymentTransactionDto;
 import ru.vorchalov.payment_gateway.dto.PayTransactionRequest;
 import ru.vorchalov.payment_gateway.entity.UserEntity;
 import ru.vorchalov.payment_gateway.repository.MerchantKeyRepository;
+import ru.vorchalov.payment_gateway.repository.TransactionStatusRepository;
 import ru.vorchalov.payment_gateway.repository.UserRepository;
 import ru.vorchalov.payment_gateway.service.payment.PaymentTransactionService;
 
@@ -50,6 +51,9 @@ public class PaymentControllerTest {
     @MockBean
     private UserRepository userRepo;
 
+    @MockBean
+    private TransactionStatusRepository statusRepo;
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -60,6 +64,7 @@ public class PaymentControllerTest {
         req.setCardNumber("4111111111111111");
         req.setCardExpiry("12/25");
         req.setCardCvc("123");
+        req.setShopId(1L);
 
         LocalDateTime fixedDate = LocalDateTime.of(2025, 4, 3, 0, 0);
 

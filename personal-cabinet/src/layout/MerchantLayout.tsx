@@ -5,6 +5,7 @@ import {
     KeyOutlined,
     LogoutOutlined,
     MenuOutlined,
+    ShopOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthProvider';
@@ -30,6 +31,11 @@ const MerchantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =
             key: '/cabinet/keys',
             icon: <KeyOutlined />,
             label: 'API ключи',
+        },
+        {
+            key: '/cabinet/shops',
+            icon: <ShopOutlined />,
+            label: 'Магазины',
         },
         {
             key: 'logout',
@@ -77,24 +83,23 @@ const MerchantLayout: React.FC<{ children: React.ReactNode }> = ({ children }) =
             )}
 
             <Layout>
-                <Header
-                    style={{
-                        background: '#fff',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '0 1rem',
-                    }}
-                >
-                    {screens.xs && (
+                { screens.xs &&
+                    <Header
+                        style={{
+                            background: '#fff',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '0 1rem',
+                        }}
+                    >
                         <Button
                             type="text"
                             icon={<MenuOutlined />}
                             onClick={() => setDrawerVisible(true)}
                         />
-                    )}
-                    <div style={{ fontWeight: 600 }}>Кабинет мерчанта</div>
-                </Header>
+                    </Header>
+                }
 
                 <Content style={{ margin: '1rem', padding: '1rem', background: '#fff' }}>
                     {children}

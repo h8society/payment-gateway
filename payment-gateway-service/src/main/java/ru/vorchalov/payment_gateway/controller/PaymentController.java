@@ -10,14 +10,19 @@ import org.springframework.web.server.ResponseStatusException;
 import ru.vorchalov.payment_gateway.dto.CreatePaymentRequest;
 import ru.vorchalov.payment_gateway.dto.PayTransactionRequest;
 import ru.vorchalov.payment_gateway.dto.PaymentTransactionDto;
+import ru.vorchalov.payment_gateway.dto.StatusDto;
 import ru.vorchalov.payment_gateway.entity.MerchantKeyEntity;
+import ru.vorchalov.payment_gateway.entity.TransactionStatusEntity;
 import ru.vorchalov.payment_gateway.entity.UserEntity;
 import ru.vorchalov.payment_gateway.repository.MerchantKeyRepository;
+import ru.vorchalov.payment_gateway.repository.TransactionStatusRepository;
 import ru.vorchalov.payment_gateway.repository.UserRepository;
 import ru.vorchalov.payment_gateway.service.payment.PaymentTransactionService;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -26,13 +31,16 @@ public class PaymentController {
     private final PaymentTransactionService paymentService;
     private final MerchantKeyRepository merchantKeyRepo;
     private final UserRepository userRepo;
+    private final TransactionStatusRepository transactionStatusRepo;
 
     public PaymentController(PaymentTransactionService paymentService,
                              MerchantKeyRepository merchantKeyRepo,
-                             UserRepository userRepo) {
+                             UserRepository userRepo,
+                             TransactionStatusRepository transactionStatusRepo) {
         this.paymentService = paymentService;
         this.merchantKeyRepo = merchantKeyRepo;
         this.userRepo = userRepo;
+        this.transactionStatusRepo = transactionStatusRepo;
     }
 
     @PostMapping
@@ -80,4 +88,20 @@ public class PaymentController {
         PaymentTransactionDto dto = paymentService.payTransaction(id, request);
         return ResponseEntity.ok(dto);
     }
+
+    @PostMapping("/{id}/refund")
+    public ResponseEntity<PaymentTransactionDto> refundTransaction(@PathVariable String id) {
+        PaymentTransactionDto refundDto = paymentService.refundTransaction(id);
+        return ResponseEntity.ok(refundDto);
+    }
+
+    @GetMapping("/statuses")
+    public ResponseEntity<List<StatusDto>> getStatuses() {
+        List<TransactionStatusEntity> statusEntities = transactionStatusRepo.findAll();
+        List<StatusDto> statuses = statusEntities.stream()
+                .map(entity -> new StatusDto(entity.getStatusId(), entity.getDescription(), entity.getStatusCode()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(statuses);
+    }
+
 }

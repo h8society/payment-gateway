@@ -13,6 +13,24 @@ public class PaymentTransactionDto {
     private String binBankName;
     private String binCountry;
     private LocalDateTime expiredAt;
+    private String orderNumber;
+    public String shopName;
+
+    public String getShopName() {
+        return shopName;
+    }
+
+    public void setShopName(String shopName) {
+        this.shopName = shopName;
+    }
+
+    public String getOrderNumber() {
+        return orderNumber;
+    }
+
+    public void setOrderNumber(String orderNumber) {
+        this.orderNumber = orderNumber;
+    }
 
     public String getTransactionId() {
         return transactionId;

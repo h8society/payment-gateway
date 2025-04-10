@@ -75,7 +75,7 @@ public class MerchantTransactionControllerTest {
         dto.setBinBankName("TestBank");
         dto.setBinCountry("USA");
 
-        when(paymentTransactionService.getTransactionsForUser("merchant2"))
+        when(paymentTransactionService.getTransactionsForUserWithFilters("merchant2", null, null, null))
                 .thenReturn(List.of(dto));
 
         mockMvc.perform(get("/api/merchant/transactions")

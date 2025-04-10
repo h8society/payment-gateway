@@ -10,6 +10,8 @@ import AdminLayout from "./layout/AdminLayout.tsx";
 import HomeRedirect from "./routes/HomeRedirect.tsx";
 import MerchantApiKeysPage from "./pages/MerchantApiKeysPage.tsx";
 import MerchantLayout from "./layout/MerchantLayout.tsx";
+import AdminShopsPage from './pages/AdminShopsPage';
+import MerchantShopsPage from './pages/MerchantShopsPage';
 
 function App() {
 
@@ -65,6 +67,26 @@ function App() {
                           <PrivateRoute requiredRoles={['ADMIN']}>
                               <AdminLayout>
                                   <AdminSettingsPage />
+                              </AdminLayout>
+                          </PrivateRoute>
+                      }
+                  />
+                  <Route
+                      path="/cabinet/shops"
+                      element={
+                          <PrivateRoute requiredRoles={['MERCHANT']}>
+                              <MerchantLayout>
+                                  <MerchantShopsPage />
+                              </MerchantLayout>
+                          </PrivateRoute>
+                      }
+                  />
+                  <Route
+                      path="/admin/shops"
+                      element={
+                          <PrivateRoute requiredRoles={['ADMIN']}>
+                              <AdminLayout>
+                                  <AdminShopsPage />
                               </AdminLayout>
                           </PrivateRoute>
                       }

@@ -28,7 +28,12 @@ public class MerchantTransactionController {
     }
 
     @GetMapping("/transactions")
-    public ResponseEntity<List<PaymentTransactionDto>> getMyTransactions(Authentication auth) {
+    public ResponseEntity<List<PaymentTransactionDto>> getMyTransactions(
+            Authentication auth,
+            @RequestParam(required = false) String order,
+            @RequestParam(required = false) Long shopId,
+            @RequestParam(required = false) Long statusId
+    ) {
         if (auth == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Требуется аутентификация");
         }
@@ -36,9 +41,8 @@ public class MerchantTransactionController {
         UserEntity user = userRepository.findByUsername(auth.getName())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Пользователь не найден"));
 
-        List<PaymentTransactionDto> transactions = new ArrayList<>(paymentTransactionService.getTransactionsForUser(user.getUsername()));
-
-        transactions.sort(Comparator.comparing(PaymentTransactionDto::getTransactionDate));
+        List<PaymentTransactionDto> transactions = paymentTransactionService
+                .getTransactionsForUserWithFilters(user.getUsername(), order, shopId, statusId);
 
         return ResponseEntity.ok(transactions);
     }

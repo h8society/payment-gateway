@@ -6,6 +6,7 @@ import {
     SettingOutlined,
     LogoutOutlined,
     MenuOutlined,
+    ShopOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthProvider';
@@ -31,6 +32,11 @@ const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             key: '/admin/transactions',
             icon: <TransactionOutlined />,
             label: 'Транзакции',
+        },
+        {
+            key: '/admin/shops',
+            icon: <ShopOutlined />,
+            label: 'Магазины',
         },
         {
             key: '/admin/settings',

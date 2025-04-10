@@ -4,9 +4,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import ru.vorchalov.payment_gateway.dto.CreateApiKeyRequest;
 import ru.vorchalov.payment_gateway.dto.MerchantInfoDto;
 import ru.vorchalov.payment_gateway.dto.MerchantStatsDto;
+import ru.vorchalov.payment_gateway.dto.TransactionStatsItemDto;
 import ru.vorchalov.payment_gateway.entity.MerchantKeyEntity;
 import ru.vorchalov.payment_gateway.entity.UserEntity;
 import ru.vorchalov.payment_gateway.repository.MerchantKeyRepository;
@@ -66,6 +68,19 @@ public class MerchantInfoController {
     @GetMapping("/stats")
     public ResponseEntity<MerchantStatsDto> getMerchantStats(Authentication auth) {
         MerchantStatsDto stats = paymentTransactionService.getStatsForUser(auth.getName());
+        return ResponseEntity.ok(stats);
+    }
+
+    @GetMapping("/graphics")
+    public ResponseEntity<List<TransactionStatsItemDto>> getMerchantStats(
+            Authentication auth,
+            @RequestParam(required = false) Long shopId,
+            @RequestParam(required = false) Long statusId
+    ) {
+        UserEntity merchant = userRepository.findByUsername(auth.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+
+        List<TransactionStatsItemDto> stats = paymentTransactionService.getTransactionStats(merchant, shopId, statusId);
         return ResponseEntity.ok(stats);
     }
 
